@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Pwdmanager Homepage</title>
+        <style>
+            table {
+              font-family: arial, sans-serif;
+              border-collapse: collapse;
+              width: 100%;
+            }
+            
+            td, th {
+              border: 1px solid #dddddd;
+              text-align: left;
+              padding: 8px;
+            }
+            
+            tr:nth-child(even) {
+              background-color: #dddddd;
+            }
+        </style>
+    </head>
+    <body>
+        <h2 id="welcomemsg">Welcome, user!</h2>
+        <h3>Passwords:</h3>
+        <table id = "pwdslist">
+            <tbody>
+                <tr>
+                    <th>Website</th>
+                    <th>Username</th>
+                    <th>Password</th>
+                    <th>Actions</th>
+                </tr>
+                <tr id="additem" style="background-color: #88ff88;">
+                    <td><input type="text" id="additem_website"></td>
+                    <td><input type="text" id="additem_username"></td>
+                    <td><input type="text" id="additem_password"></td>
+                    <td>
+                        <button onclick="addItem()">Add</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <br>
+        <a href="./logout"><button>Logout</button></a>
+        <a href="./settings"><button>Settings</button></a>
+    </body>
+
+    <script>
+        let tbody = document.getElementById("pwdslist").getElementsByTagName("tbody")[0]
+        var selectedEntry = null
+        function selectEditRow(entry) { // inserts an entry editor right below an entry that the user wants to edit
+            let oldElement = document.getElementById("editor") // removing the old editor if it exists
+            if (oldElement) {
+                let condition = entry == oldElement.previousSibling
+                tbody.removeChild(oldElement)
+
+                if (condition) {
+                    return
+                }
+            }
+
+            let entryCells = entry.getElementsByTagName("td")
+            let editor = document.createElement("tr") // creating the editor element
+            editor.id = "editor"
+            editor.style = "background-color: #8888ff;"
+
+            let fields = []
+            for (let i = 0; i < 3; i++) {
+                let cell = editor.insertCell()
+                let input = document.createElement("input")
+                input.type = "text" 
+                input.id = "editor_" + i.toString()
+                input.value = entryCells[i].textContent
+                cell.appendChild(input)
+                fields.push(input)
+            }
+
+            let cell4 = editor.insertCell()
+            let submit = document.createElement("button")
+            submit.addEventListener("click", () => { // sends the changes to the server for update
+                let dataid = entry.id
+                let website = fields[0].value
+                let username = fields[1].value
+                let password = fields[2].value
+
+                if (sendEditRequest(dataid, website, username, password)) {
+                    entryCells[0].textContent = website
+                    entryCells[1].textContent = username
+                    entryCells[2].textContent = password
+                    editor.remove()
+                } else {
+                    alert("Unable to edit entry")
+                }
+            })
+
+            submit.textContent = "Save"
+            cell4.appendChild(submit)
+            entry.after(editor)
+        }
+
+        async function sendEditRequest(dataid, website, username, password) {
+            let response = await fetch("./editEntry", {
+                method: "POST",
+                body: JSON.stringify({
+                    "dataid": dataid,
+                    "website": website,
+                    "username": username,
+                    "password": password
+                })
+            })
+
+            return response.ok
+        }
+
+        function addRow(id, website, username, password) { // adds a new row into the table with specified parameters
+            let newRow = document.createElement("tr")
+            newRow.id = id
+            let cell1 = newRow.insertCell()
+            cell1.innerHTML = website
+
+            let cell2 = newRow.insertCell()
+            cell2.innerHTML = username
+
+            let cell3 = newRow.insertCell()
+            cell3.innerHTML = password
+
+            let cell4 = newRow.insertCell()
+            let button1 = document.createElement("button")
+            button1.innerHTML = "Edit"
+            cell4.appendChild(button1)
+            button1.addEventListener("click", () => {
+                selectEditRow(newRow)
+            })
+
+            let button2 = document.createElement("button")
+            button2.innerHTML = "Delete"
+            cell4.appendChild(button2)
+            button2.addEventListener("click", () => {
+                deleteRow(newRow)
+            })
+
+            document.getElementById("additem").before(newRow)
+        }
+
+        async function deleteRow(entry) { // deletes a row of user data when requested
+            let response = await fetch("./deleteEntry", {
+                method: "POST",
+                body: entry.id
+            })
+
+            if (response.ok) {
+                entry.remove()
+            } else {
+                alert("Unable to delete user data")
+            }
+        }
+
+        async function addItem() { // tells the server to add information to the user's data
+            let website = document.getElementById("additem_website").value
+            let username = document.getElementById("additem_username").value
+            let password = document.getElementById("additem_password").value
+
+            let response = await fetch("./addEntry", {
+                method: "POST",
+                body: JSON.stringify({
+                    "website": website,
+                    "username": username,
+                    "password": password
+                })
+            })
+
+            if (response.ok) { // create the new element
+                let data = await response.json()
+                addRow(data.dataid, data.website, data.username, data.password)
+            } else {
+                alert(await response.json().message)
+            }
+        }
+    </script>
+
+    <script>
+        async function getData() {
+            let response = await fetch("./userdata", {
+                method: "GET"
+            })
+
+            if (response.ok) {
+                let data = await response.json()
+                for (let i = 0; i < data.length; i++) {
+                    let entry = data[i]
+                    addRow(entry.dataid, entry.website, entry.username, entry.password)
+                }
+            } else {
+                alert("Unable to fetch user data")
+            }
+        }
+        getData()
+    </script>
+</html>

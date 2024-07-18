@@ -1,0 +1,15 @@
+{
+  "name": "pwmanager-basic",
+  "version": "1.0.0",
+  "description": "Basic password manager web application made for demonstration purposes.",
+  "scripts": {},
+  "author": "chaosium43",
+  "license": "ISC",
+  "dependencies": {
+    "cookie-parser": "^1.4.6",
+    "crypto": "^1.0.1",
+    "express": "^4.19.2",
+    "jsdom": "^24.1.0",
+    "mysql": "^2.18.1"
+  }
+}

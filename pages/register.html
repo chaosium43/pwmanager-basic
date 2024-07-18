@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Create Account</title>
+    </head>
+    <body>
+        <h2>Login</h2>
+        <form action="/register" method="post">
+            <label for="user">Username</label><br>
+            <input type="text" id="user" name="register"><br>
+            <label for="pass1">Password</label><br>
+            <input type="password" id="pass1" name="register"><br>
+            <label for="pass2">Confirm Password</label><br>
+            <input type="password" id="pass2" name="register"><br>
+            <label style="color:red" id="errormsg"></label><br>
+            <input type="submit" value="Submit">
+        </form>
+        <a href="./login"><button type="button">Back to Login</button></a>
+    </body>
+</html>
