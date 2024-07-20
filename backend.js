@@ -10,7 +10,7 @@ const cookieParser = require('cookie-parser')
 
 // app initialization
 let app = express()
-let webpages = ["login", "register", "home"]
+let webpages = ["login", "register", "home", "settings"]
 let htmlFiles = {}
 app.use(cookieParser("your-secret-here"))
 
@@ -35,6 +35,12 @@ function websiteErrorMsg(site, message) { // creates an error message for a webs
     let dom = new jsdom.JSDOM(site, {url: "http://localhost:3000", contentType: "text/html", pretendToBeVisual: false})
     dom.window.document.getElementById("errormsg").innerHTML = message
     return dom.serialize()
+}
+
+function createLog(id, ip, action, details,) { // creates a log in the logs table
+    sqlDatabase.query("insert into history (id, ip, action, details, timestamp) values (?, ?, ?, ?, ?);", [
+        id, ip, action, details, new Date(Date.now())
+    ])
 }
 
 // internet api
@@ -120,6 +126,16 @@ app.get("/home", (req, res) => {
     })
 })
 
+app.get("/settings", (req, res) => {
+    let cookie = req.signedCookies["pwdapplication-cookie"]
+    if (!cookie) { // unidentified users should not be on the home screen
+        res.send("<script>window.location='./login'</script>")
+        return
+    }
+
+    res.send(htmlFiles.settings)
+})
+
 app.get("/logout", (req, res) => { // destroys the user's cookie and logs them out
     res.clearCookie("pwdapplication-cookie")
     res.send("<script>window.location='./login'</script>")
@@ -147,6 +163,27 @@ app.get("/userdata", (req, res) => { // sends the user's data table to the clien
     })
 })
 
+app.get("/usernameFromId", (req, res) => { // sends username from an id
+    let cookie = req.signedCookies["pwdapplication-cookie"]
+    if (!cookie) {
+        res.status(401).send("No user session found.")
+        return
+    }
+
+    sqlDatabase.query("select username from accounts where id = ?;", [cookie], (error, response) => {
+        if (error) {
+            throw error
+        }
+
+        if (response.length == 0) {
+            res.status(401).send("User session is invalid.")
+            return
+        }
+
+        res.status(200).send(response[0].username)
+    })
+})
+
 app.post("/login", (req, res) => { // handles logging into accounts
     let body = ""
     req.on("data", (data) => {
@@ -161,9 +198,13 @@ app.post("/login", (req, res) => { // handles logging into accounts
         let username = params.login[0]
         let password = params.login[1]
 
-        for (const c in username) { // sanitizing input to prevent sql injections
+        createLog(-1, req.ip, "LOGIN_REQUEST", `username: ${username}`)
+
+        for (const i in username) { // sanitizing input to prevent sql injections
+            const c = username[i]
             if (!("qwertyuiopasdfghjklzxcvbnm1234567890_".match(c.toLowerCase()))) {
-                res.send(websiteErrorMsg(htmlFiles.register, "Username may only contain alphanumeric characters or underscores."))
+                res.send(websiteErrorMsg(htmlFiles.login, "Username may only contain alphanumeric characters or underscores."))
+                return
             }
         }
 
@@ -185,6 +226,7 @@ app.post("/login", (req, res) => { // handles logging into accounts
                 // generating user cookie
                 res.cookie("pwdapplication-cookie", account.id.toString(), {signed: true, maxAge: 3600000})
                 res.send("<script>window.location='./home'</script>")
+                createLog(account.id.toString(), req.ip, "LOGIN_SUCCESS", `username: ${username}`)
             } else {
                 res.send(websiteErrorMsg(htmlFiles.login, "Password is incorrect."))
             }
@@ -207,6 +249,8 @@ app.post("/register", (req, res) => { // lets you create an account
         let password = params.register[1]
         let confirms = params.register[2]
 
+        createLog(-1, req.ip, "REGISTER_REQUEST", `username: ${username}`)
+
         // sanitizing the inputs
         if (username.length > 20) {
             res.send(websiteErrorMsg(htmlFiles.register, "Username must be less than 20 characters long."))
@@ -218,9 +262,11 @@ app.post("/register", (req, res) => { // lets you create an account
             return
         }
 
-        for (const c in username) {
+        for (const i in username) {
+            const c = username[i]
             if (!("qwertyuiopasdfghjklzxcvbnm1234567890_".match(c.toLowerCase()))) {
                 res.send(websiteErrorMsg(htmlFiles.register, "Username may only contain alphanumeric characters or underscores."))
+                return
             }
         }
 
@@ -252,6 +298,7 @@ app.post("/register", (req, res) => { // lets you create an account
                 sqlDatabase.query(`insert into accounts (id, username, hash, salt) values (${id}, "${username}", "${hash}", "${salt}");`)
                 res.cookie("pwdapplication-cookie", id.toString(), {maxAge: 3600000, signed: true})
                 res.send("<script>window.location='./home'</script>")
+                createLog(id.toString(), req.ip, "REGISTER_SUCCESS", `username: ${username}`)
             })
         })
     })
@@ -268,9 +315,27 @@ app.post("/addEntry", (req, res) => {
 
     req.on("end", () => {
         let cookie = req.signedCookies["pwdapplication-cookie"]
+        let params = JSON.parse(body)
+        let website = params.website
+        let username = params.username
+        let password = params.password
+
         if (!cookie) {
             res.status(401).send(JSON.stringify({message: "No cookie found/cookie is invalid."}))
+            createLog(-1, req.ip, "ADD_ATTEMPT", `username: ${username}, password: ${password}, website: ${website}`)
             return
+        }
+
+        createLog(cookie, req.ip, "ADD_ATTEMPT", `username: ${username}, password: ${password}, website: ${website}`)
+
+        if (website.length > 100 || username.length > 20 || password.length > 20) {
+            res.status(400).send({message: "Provided parameters were too long"})
+            return;
+        }
+
+        if (website.length == 0 || username.length == 0 || password.length == 0) {
+            res.status(400).send({message: "Fields may not be left blank."})
+            return;
         }
 
         sqlDatabase.query(`select * from accounts where id = ${cookie};`, (err, data) => {
@@ -279,14 +344,9 @@ app.post("/addEntry", (req, res) => {
             }
 
             if (data.length == 0) {
-                res.status(401).send(JSON.stringify({message: "User no longer exists"}))
+                res.status(401).send({message: "User does not exist"})
                 return
             }
-
-            let params = JSON.parse(body)
-            let website = params.website
-            let username = params.username
-            let password = params.password
 
             sqlDatabase.query("select dataid from userdata order by dataid desc limit 1;", (error, response) => { // assigning a data id to the entry the user wants to add
                 if (error) {
@@ -300,6 +360,7 @@ app.post("/addEntry", (req, res) => {
 
                 sqlDatabase.query(`insert into userdata (id, dataid, website, username, password) values (?, ?, ?, ?, ?);`, [cookie, dataid, website, username, password])
                 res.status(200).send(JSON.stringify({"dataid": dataid, "website": website, "username": username, "password": password}))
+                createLog(cookie, req.ip, "ADD_SUCCESS", `username: ${username}, password: ${password}, website: ${website}`)
             })
         })
     })
@@ -318,10 +379,12 @@ app.post("/deleteEntry", (req, res) => { // removes user's entry from their data
         let cookie = req.signedCookies["pwdapplication-cookie"]
         if (!cookie) {
             res.sendStatus(401)
+            createLog(-1, req.ip, "DELETE_FAILURE", `dataid: ${body}`)
             return
         }
-        sqlDatabase.query("delete from userdata where dataid = ?;", [body])
+        sqlDatabase.query("delete from userdata where dataid = ? and id = ?;", [body, cookie])
         res.sendStatus(200)
+        createLog(cookie, req.ip, "DELETE_SUCCESS", `dataid: ${body}`)
     })
 })
 
@@ -338,12 +401,107 @@ app.post("/editEntry", (req, res) => { // modifies an entry that exists in the u
         let cookie = req.signedCookies["pwdapplication-cookie"]
         if (!cookie) {
             res.sendStatus(401)
+            createLog(-1, req.ip, "EDIT_FAILURE", `dataid: ${body}`)
             return
         }
         
         let params = JSON.parse(body)
-        sqlDatabase.query("update userdata set website = ?, username = ?, password = ? where dataid = ?;", [params.website, params.username, params.password, params.dataid])
+        sqlDatabase.query("update userdata set website = ?, username = ?, password = ? where dataid = ? and id = ?;", [params.website, params.username, params.password, params.dataid, cookie])
+        createLog(cookie, req.ip, "EDIT_SUCCESS", `dataid: ${body}, website: ${body.website}, username: ${body.username}, password: ${body.password}`)
         res.sendStatus(200)
+    })
+})
+
+app.post("/changeUsername", (req, res) => { // allows the user to change their username
+    let body = ""
+    req.on("data", (data) => {
+        body += data
+        if (body.length > 1e6) {
+            req.connection.destroy()
+        }
+    })
+
+    req.on("end", () => {
+        let cookie = req.signedCookies["pwdapplication-cookie"]
+        if (!cookie) {
+            res.status(401).send("User session is invalid.")
+            createLog(-1, req.ip, "CHANGEUSER_FAILURE", ``)
+            return
+        }
+
+        // sanitizing user input
+        if (body.length > 20) {
+            res.status(400).send("Usernames may not be more than 20 characters in length.")
+            createLog(cookie, req.ip, "CHANGEUSER_FAILURE", `Username was too long.`)
+            return
+        }
+
+        if (body.length == 0) {
+            res.status(400).send("Username may not be blank.")
+            createLog(cookie, req.ip, "CHANGEUSER_FAILURE", `Username was left blank.`)
+            return
+        }
+
+        for (const i in body) {
+            if (!("qwertyuiopasdfghjklzxcvbnm_1234567890".match(body[i].toLowerCase()))) {
+                res.status(400).send("Username may only contain alphanumerical characters.")
+                createLog(cookie, req.ip, "CHANGEUSER_FAILURE", `Username contained disallowed characters.`)
+                return
+            }
+        }
+
+        sqlDatabase.query("select * from accounts where username = ?;", [body], (error, response) => {
+            if (error) {nm
+                throw error
+            }
+
+            if (response.length > 0) {
+                res.status(400).send("Username is already taken.")
+                createLog(cookie, req.ip, "CHANGEUSER_FAILURE", `Username was already taken.`)
+                return
+            }
+
+            sqlDatabase.query("update accounts set username = ? where id = ?;", [body, cookie])
+            createLog(cookie, req.ip, "CHANGEUSER_SUCCESS", `New username: ${body}`)
+            res.status(200).send(body)
+        })
+    })
+})
+
+app.post("/changePassword", (req, res) => {
+    let body = ""
+    req.on("data", (data) => {
+        body += data
+        if (body.length > 1e6) {
+            req.connection.destroy()
+        }
+    })
+
+    req.on("end", () => {
+        let cookie = req.signedCookies["pwdapplication-cookie"]
+        if (!cookie) {
+            res.status(401).send("User session is invalid.")
+            createLog(-1, req.ip, "CHANGEPASS_FAILURE", `Invalid Session.`)
+            return
+        }
+
+        let params = JSON.parse(body)
+        console.log(body)
+        if (params.password != params.confirms) {
+            res.status(400).send("Password and confirmation do not match.")
+            createLog(cookie, req.ip, "CHANGEPASS_FAILURE", `Password and confirmation do not match.`)
+            return
+        }
+
+        let salt = crypto.randomBytes(4).toString("hex")
+
+        sqlDatabase.query("update accounts set hash = ?, salt = ? where id = ?;", [
+            crypto.createHash("sha256").update(params.password + salt).digest("hex"),
+            salt,
+            cookie
+        ])
+        res.status(200)
+        createLog(cookie, req.ip, "CHANGEPASS_SUCCESS", `Password not shown for privacy reasons.`)
     })
 })
 

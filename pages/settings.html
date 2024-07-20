@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Settings</title>
+        <style>
+            table {
+              font-family: arial, sans-serif;
+              border-collapse: collapse;
+              width: 100%;
+            }
+            
+            td, th {
+              border: 1px solid #dddddd;
+              text-align: left;
+              padding: 8px;
+            }
+            
+            tr:nth-child(even) {
+              background-color: #dddddd;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Settings</h1>
+        <table>
+            <tbody>
+                <tr>
+                    <th>Username</th>
+                    <th>Password</th>
+                </tr>
+                <tr>
+                    <th id="username">user</th>
+                    <th id="password">???</th>
+                </tr>
+                <tr>
+                    <th><input type="text" id="newusername" placeholder="New Username"></th>
+                    <th>
+                        <input type="password" id="newpassword" placeholder="New Password">
+                        <br>
+                        <input type="password" id="conpassword" placeholder="Confirm Password">
+                    </th>
+                </tr>
+                <tr>
+                    <th><button onclick="changeUsername()">Save</button></th>
+                    <th><button onclick="changePassword()">Save</button></th>
+                </tr>
+            </tbody>
+        </table>
+        <p id="errormsg" style="color:red"></p>
+        <br>
+        <a href="./home"><button>Back</button></a>
+    </body>
+
+    <script>
+        async function changeUsername() {
+            let response = await fetch("./changeUsername", {
+                method: "POST",
+                body: document.getElementById("newusername").value
+            })
+
+            if (response.ok) {
+                document.getElementById("username").textContent = await response.text()
+            } else {
+                document.getElementById("errormsg").textContent = await response.text()
+            }
+        }
+
+        async function changePassword() {
+            let response = await fetch("./changePassword", {
+                method: "POST",
+                body: JSON.stringify({
+                    password: document.getElementById("newpassword").value,
+                    confirms: document.getElementById("conpassword").value
+                })
+            })
+
+            if (!response.ok) {
+                document.getElementById("errormsg").textContent = await response.text()
+            }
+        }
+    </script>
+
+    <script>
+        async function initialize() {
+            const response = await fetch("./usernameFromId");
+            document.getElementById("username").textContent = await response.text()
+        }
+        initialize()
+    </script>
+</html>
