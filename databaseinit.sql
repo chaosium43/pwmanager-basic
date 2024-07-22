@@ -18,7 +18,7 @@ create table userdata (
 
 create table history (
     id bigint,
-    ip char(15) not null,
+    ip tinytext not null,
     action char(20) not null,
     details text not null,
     timestamp datetime not null

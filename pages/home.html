@@ -41,7 +41,7 @@
                 </tr>
             </tbody>
         </table>
-        <br>
+        <p>Note that websites may not be more than 100 characters long, usernames and passwords may not be more than 20 characters, long, and fields may not contain non-ASCII characters.</p>
         <a href="./logout"><button>Logout</button></a>
         <a href="./settings"><button>Settings</button></a>
     </body>
@@ -78,13 +78,13 @@
 
             let cell4 = editor.insertCell()
             let submit = document.createElement("button")
-            submit.addEventListener("click", () => { // sends the changes to the server for update
+            submit.addEventListener("click", async function() { // sends the changes to the server for update
                 let dataid = entry.id
                 let website = fields[0].value
                 let username = fields[1].value
                 let password = fields[2].value
 
-                if (sendEditRequest(dataid, website, username, password)) {
+                if (await sendEditRequest(dataid, website, username, password)) {
                     entryCells[0].textContent = website
                     entryCells[1].textContent = username
                     entryCells[2].textContent = password
@@ -150,6 +150,9 @@
             })
 
             if (response.ok) {
+                if (entry.nextSibling.id == "editor") { // removing editor if element being edited needs to be removed
+                    entry.nextSibling.remove()
+                }
                 entry.remove()
             } else {
                 alert("Unable to delete user data")
@@ -174,7 +177,8 @@
                 let data = await response.json()
                 addRow(data.dataid, data.website, data.username, data.password)
             } else {
-                alert(await response.json().message)
+                let data = await response.text()
+                alert(data)
             }
         }
     </script>

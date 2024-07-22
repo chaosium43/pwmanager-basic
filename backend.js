@@ -37,7 +37,10 @@ function websiteErrorMsg(site, message) { // creates an error message for a webs
     return dom.serialize()
 }
 
-function createLog(id, ip, action, details,) { // creates a log in the logs table
+function createLog(id, ip, action, details) { // creates a log in the logs table
+    if (details.length > 10000) {
+        details = details.substring(0, 10000)
+    }
     sqlDatabase.query("insert into history (id, ip, action, details, timestamp) values (?, ?, ?, ?, ?);", [
         id, ip, action, details, new Date(Date.now())
     ])
@@ -77,7 +80,7 @@ app.get("/", (req, res) => {
 app.get("/login", (req, res) => {
     let cookie = req.signedCookies["pwdapplication-cookie"]
     if (cookie) {
-        res.send("<script>window.location='./home'")
+        res.send("<script>window.location='./home'</script>")
         return
     }
     res.send(htmlFiles.login)
@@ -106,7 +109,6 @@ app.get("/home", (req, res) => {
         }
 
         if (response.length == 0) {
-            console.log("Invalid cookie detected")
             res.clearCookie("pwdapplication-cookie")
             res.send("<script>window.location='./login'</script>")
             return
@@ -146,6 +148,7 @@ app.get("/userdata", (req, res) => { // sends the user's data table to the clien
     let cookie = req.signedCookies["pwdapplication-cookie"]
     if (!cookie) {
         res.sendStatus(401)
+        createLog(-1, req.ip, "DATAREQ_FAILURE", "No cookie provided")
         return
     }
 
@@ -160,6 +163,7 @@ app.get("/userdata", (req, res) => { // sends the user's data table to the clien
         }
 
         res.status(200).send(JSON.stringify(data))
+        createLog(cookie, req.ip, "DATAREQ_SUCCESS", "N/A")
     })
 })
 
@@ -190,6 +194,7 @@ app.post("/login", (req, res) => { // handles logging into accounts
         body += data
         if (body.length > 1e6) {
             req.connection.destroy()
+            createLog(-1, req.ip, "DATA_OVERFLOW", `request: register`)
         }
     })
 
@@ -240,6 +245,7 @@ app.post("/register", (req, res) => { // lets you create an account
         body += data
         if (body.length > 1e6) {
             req.connection.destroy()
+            createLog(-1, req.ip, "DATA_OVERFLOW", `request: register`)
         }
     })
 
@@ -310,6 +316,7 @@ app.post("/addEntry", (req, res) => {
         body += data
         if (body.length > 1e6) {
             req.connection.destroy()
+            createLog(-1, req.ip, "DATA_OVERFLOW", `request: add entry`)
         }
     })
 
@@ -329,12 +336,12 @@ app.post("/addEntry", (req, res) => {
         createLog(cookie, req.ip, "ADD_ATTEMPT", `username: ${username}, password: ${password}, website: ${website}`)
 
         if (website.length > 100 || username.length > 20 || password.length > 20) {
-            res.status(400).send({message: "Provided parameters were too long"})
+            res.status(400).send("Provided parameters were too long")
             return;
         }
 
         if (website.length == 0 || username.length == 0 || password.length == 0) {
-            res.status(400).send({message: "Fields may not be left blank."})
+            res.status(400).send("Fields may not be left blank.")
             return;
         }
 
@@ -344,7 +351,7 @@ app.post("/addEntry", (req, res) => {
             }
 
             if (data.length == 0) {
-                res.status(401).send({message: "User does not exist"})
+                res.status(401).send("User does not exist")
                 return
             }
 
@@ -372,6 +379,7 @@ app.post("/deleteEntry", (req, res) => { // removes user's entry from their data
         body += data
         if (body.length > 1e6) {
             req.connection.destroy()
+            createLog(-1, req.ip, "DATA_OVERFLOW", `request: delete entry`)
         }
     })
 
@@ -394,6 +402,7 @@ app.post("/editEntry", (req, res) => { // modifies an entry that exists in the u
         body += data
         if (body.length > 1e6) {
             req.connection.destroy()
+            createLog(-1, req.ip, "DATA_OVERFLOW", `request: edit entry`)
         }
     })
 
@@ -401,13 +410,31 @@ app.post("/editEntry", (req, res) => { // modifies an entry that exists in the u
         let cookie = req.signedCookies["pwdapplication-cookie"]
         if (!cookie) {
             res.sendStatus(401)
-            createLog(-1, req.ip, "EDIT_FAILURE", `dataid: ${body}`)
+            createLog(-1, req.ip, "EDIT_FAILURE", `Client is not logged in.`)
+            return
+        }
+
+        let params = JSON.parse(body)
+        let username = params.username
+        let website = params.website
+        let password = params.password
+        let dataid = params.dataid
+
+        // sanitizing user input
+        if (website.length > 100 || username.length > 20 || password.length > 20) {
+            res.sendStatus(400)
+            createLog(cookie, req.ip, "EDIT_FAILURE", `Fields provided were too long (dataid: ${dataid})`)
+            return
+        }
+
+        if (website.length == 0 || username.length == 0 || password.length == 0) {
+            res.sendStatus(400)
+            createLog(cookie, req.ip, "EDIT_FAILURE", `Fields provided were blank (dataid: ${dataid})`)
             return
         }
         
-        let params = JSON.parse(body)
-        sqlDatabase.query("update userdata set website = ?, username = ?, password = ? where dataid = ? and id = ?;", [params.website, params.username, params.password, params.dataid, cookie])
-        createLog(cookie, req.ip, "EDIT_SUCCESS", `dataid: ${body}, website: ${body.website}, username: ${body.username}, password: ${body.password}`)
+        sqlDatabase.query("update userdata set website = ?, username = ?, password = ? where dataid = ? and id = ?;", [website, username, password, dataid, cookie])
+        createLog(cookie, req.ip, "EDIT_SUCCESS", `dataid: ${dataid}, website: ${website}, username: ${username}, password: ${password}`)
         res.sendStatus(200)
     })
 })
@@ -418,6 +445,7 @@ app.post("/changeUsername", (req, res) => { // allows the user to change their u
         body += data
         if (body.length > 1e6) {
             req.connection.destroy()
+            createLog(-1, req.ip, "DATA_OVERFLOW", `request: change username`)
         }
     })
 
@@ -474,6 +502,7 @@ app.post("/changePassword", (req, res) => {
         body += data
         if (body.length > 1e6) {
             req.connection.destroy()
+            createLog(-1, req.ip, "DATA_OVERFLOW", `request: change password`)
         }
     })
 
@@ -486,7 +515,6 @@ app.post("/changePassword", (req, res) => {
         }
 
         let params = JSON.parse(body)
-        console.log(body)
         if (params.password != params.confirms) {
             res.status(400).send("Password and confirmation do not match.")
             createLog(cookie, req.ip, "CHANGEPASS_FAILURE", `Password and confirmation do not match.`)
@@ -500,7 +528,7 @@ app.post("/changePassword", (req, res) => {
             salt,
             cookie
         ])
-        res.status(200)
+        res.sendStatus(200)
         createLog(cookie, req.ip, "CHANGEPASS_SUCCESS", `Password not shown for privacy reasons.`)
     })
 })

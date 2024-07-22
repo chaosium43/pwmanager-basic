@@ -74,7 +74,9 @@
                 })
             })
 
-            if (!response.ok) {
+            if (response.ok) {
+                alert("Password successfully changed.")
+            } else {
                 document.getElementById("errormsg").textContent = await response.text()
             }
         }
