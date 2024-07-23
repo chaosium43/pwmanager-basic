@@ -19,7 +19,7 @@ let sqlDatabase = mysql.createConnection({
     host: "localhost",
     user: "loginsdatabase",
     password: 'YOUR-PASSWORD-HERE',
-    database: "PWDAPPLICATION"
+    database: "pwdapplication"
 })
 
 sqlDatabase.connect((err) => {

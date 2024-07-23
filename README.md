@@ -6,7 +6,8 @@ Step 1: Ensure that Node.js and MySQL are installed. You must also ensure that t
 Step 2: Log into MySQL as root and run databaseinit.sql. This will set up the database, the tables, and the account used by the backend to log into the database. If you want to change the password of this account, go to line 23 of databaseinit.sql and find a string that says 'YOUR-PASSWORD-HERE' and change it to the password you want, then go to backend.js at line 21 and change the string that says "YOUR-PASSWORD-HERE" to the password you set in databaseinit.sql. <br>
 Step 3: Run "npm install" in the repository directory. This will install the prerequisite modules required for the backend to run. <br>
 Step 4: Go to line 15 of backend.js and where you see the string "your-secret-here" put the secret you want to use for cookie signing.<br>
-Step 5: Run "node backend.js" to start the application. <br>
+Step 5: Open port 3000 on your computer, and/or port 443 if you plan to host this on a proper website. <br>
+Step 6: Run "node backend.js" to start the application. <br>
 
 # Features (Client)
 If you visit the application's website and do not choose a subpage, you will be immediately redirected to the login page if you are not currently logged into an account.
