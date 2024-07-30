@@ -33,4 +33,6 @@ create index timeIndex on history (timestamp);
 alter table userdata add foreign key (id) references accounts(id);
 create user loginsdatabase@localhost identified with mysql_native_password by 'YOUR-PASSWORD-HERE';
 grant all privileges on pwdapplication.* to loginsdatabase@localhost;
+create user 'loginsdatabase'@'%' identified with mysql_native_password by 'YOUR-PASSWORD-HERE';
+grant all privileges on pwdapplication.* to 'loginsdatabase'@'%';
 flush privileges;

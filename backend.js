@@ -16,17 +16,17 @@ app.use(cookieParser("your-secret-here"))
 
 // connecting to the mysql database
 let sqlDatabase = mysql.createConnection({
-    host: "localhost",
+    host: "mysqldb",
     user: "loginsdatabase",
     password: 'YOUR-PASSWORD-HERE',
-    database: "pwdapplication"
+    database: "pwdapplication",
+    port: 3306
 })
 
 sqlDatabase.connect((err) => {
     if (err) {
         throw err
     }
-    console.log("Successfully connected to MySQL")
 })
 
 // helper functions

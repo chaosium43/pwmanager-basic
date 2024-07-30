@@ -1,13 +1,23 @@
 # pwmanager-basic
-This is a password management web application made for testing purposes. The front end uses basic Web3(HTML, CSS, and Javascript) and the backend uses Node.js + MySQL. This app has everything you woud expectfrom a password management application including an account system (registration + login), and aGUI where passwords for different accounts can be managed.
+This is the docker branch of my password management web application. This branch is for people who want to run my app as a docker-compose project, or who want to build docker images to run this app.
 
-# How to setup
-Step 1: Ensure that Node.js and MySQL are installed. You must also ensure that the MySQL service is running. <b>Note that Node.js should be running on version v20.15.1 and that MySQL should be running on the most updated version or there may be compatability issues with this program.</b> <br>
-Step 2: Log into MySQL as root and run databaseinit.sql. This will set up the database, the tables, and the account used by the backend to log into the database. If you want to change the password of this account, go to line 23 of databaseinit.sql and find a string that says 'YOUR-PASSWORD-HERE' and change it to the password you want, then go to backend.js at line 21 and change the string that says "YOUR-PASSWORD-HERE" to the password you set in databaseinit.sql. <br>
-Step 3: Run "npm install" in the repository directory. This will install the prerequisite modules required for the backend to run. <br>
-Step 4: Go to line 15 of backend.js and where you see the string "your-secret-here" put the secret you want to use for cookie signing.<br>
-Step 5: Open port 3000 on your computer, and/or port 443 if you plan to host this on a proper website. <br>
-Step 6: Run "node backend.js" to start the application. <br>
+# How to setup/run
+Step 1: Ensure that Docker is installed on your computer and is up and running.<br>
+Step 2: Go to line 3 of mysql.Dockerfile and change the root password to whatever you desire. <br>
+Step 3: Go to lines 34 and 36 of databaseinit.sql and line 21 of backend.js and change all instances of "YOUR-PASSWORD-HERE" to the password you want to use to authenticate the loginsdatabase MySQL database account. <br>
+Step 4: Run "docker-compose up" to start the project. Note that it will error the first time it is ever run on the project due to a minor bug in the mysqldb container health check. <br>
+
+# How to build for release
+If you want to build the project in a similar manner to the docker build released for this project, here are the necessary steps: <br>
+Step 1: Complete all the setup steps (including a run of "docker-compose up") and then do "docker image ls" in your command line. Ensure that you have images "pwmanager-basic_app" and "pwmanager-basic_mysqldb" in the images list. Note that depending on your version of docker, these images may be named/tagged as "pwmanager-basic-app" and "pwmanager-basic-mysqldb" instead. You may rename these images by using "docker image tag [container name here] [desired name here]" and then doing "docker image rm [old image name here]" to cleanup the old tag for the image. <br>
+Step 2: Run the following commands in your terminal:
+<pre>
+docker save -o mysqldb.tar pwmanager-basic_mysqldb
+docker save -o app.tar pwmanager-basic_app
+</pre>
+If this step was completed successfully, you should see two new files in this project's directory: app.tar, and mysqldb.tar. <br>
+Step 3: Create a directory in which all the build files will be located. <br>
+Step 4: Drag the following files from this directory into the build files directory: "app.tar", "mysqldb.tar", "app-cleanup.ps1", "app-cleanup.sh", "app-start.ps1", "app-start.sh", "app-stop.ps1", "app-stop.sh". <br>
 
 # Features (Client)
 If you visit the application's website and do not choose a subpage, you will be immediately redirected to the login page if you are not currently logged into an account.
