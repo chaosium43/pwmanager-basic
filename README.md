@@ -34,6 +34,6 @@ Unhappy with your account's username or password? Feel free to change them in th
 
 On the server, the backend is a MySQL database with three tables, as shown in the diagram. The accounts table is used for the login/registration system, and for user identification. The primary key of the table is the username field which is used to find which account a user wants to log into during the login process, and the id is a unique key used to match the accounts with user data in the userdata table.
 
-Some security features:
+Some security features: <br>
 -The passwords for the users are stored as a SHA256 hex string (hash), with an 8 character hexadecimal salt string. <br>
 -All cookies are signed and expire after an hour. 
