@@ -1,5 +1,5 @@
 # pwmanager-basic
-This is a password management web application made for testing purposes. The front end uses basic Web3(HTML, CSS, and Javascript) and the backend uses Node.js + MySQL. This app has everything you woud expectfrom a password management application including an account system (registration + login), and aGUI where passwords for different accounts can be managed.
+This is a password management web application made for testing purposes. The front end uses basic Web3(HTML, CSS, and Javascript) and the backend uses Node.js + MySQL. This app has everything you woud expectfrom a password management application including an account system (registration + login), and a GUI where passwords for different accounts can be managed. It also supports docker for ease of running on different machines. You can access the dockerized build of this application under the releases for this repository, and the docker-compose project version of this application under the docker branch of this repository.
 
 # How to setup
 Step 1: Ensure that Node.js and MySQL are installed. You must also ensure that the MySQL service is running. <b>Note that Node.js should be running on version v20.15.1 and that MySQL should be running on the most updated version or there may be compatability issues with this program.</b> <br>
