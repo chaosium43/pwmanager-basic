@@ -19,7 +19,7 @@ services:
       - 3306:3306
     command: --default-authentication-plugin=mysql_native_password  
     volumes:
-      - db:/var/lib/mysql
+      - ./db_data:/var/lib/mysql
 #      - ./databaseinit.sql:/docker-entrypoint-initdb.d/databaseinit.sql
     healthcheck:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
