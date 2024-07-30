@@ -19,6 +19,7 @@ docker save -o app.tar pwmanager-basic_app
 If this step was completed successfully, you should see two new files in this project's directory: app.tar, and mysqldb.tar. <br>
 Step 3: Create a directory in which all the build files will be located. <br>
 Step 4: Drag the following files from this directory into the build files directory: "app.tar", "mysqldb.tar", "app-cleanup.ps1", "app-cleanup.sh", "app-start.ps1", "app-start.sh", "app-stop.ps1", "app-stop.sh". <br>
+Step 5: Create a folder called "db_data" in the build directory. This is where data for the application will be permanently stored
 
 # Features (Client)
 If you visit the application's website and do not choose a subpage, you will be immediately redirected to the login page if you are not currently logged into an account.

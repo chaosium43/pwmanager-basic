@@ -21,7 +21,7 @@ docker inspect mysqldb
 if [ $? -eq 0 ]; then
     docker start mysqldb
 else
-    docker run --name mysqldb --network nodejs-mysql-network -p 3306:3306 -d pwmanager-basic_mysqldb
+    docker run --name mysqldb --network nodejs-mysql-network -p 3306:3306 -v ./db_data:/var/lib/mysql -d pwmanager-basic_mysqldb
 fi
 
 while true; do
