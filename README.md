@@ -4,9 +4,9 @@ This is the docker branch of my password management web application. This branch
 # How to setup/run
 Step 1: Ensure that Docker is installed on your computer and is up and running.<br>
 Step 2: Create a folder called "db_data" in the project folder. This is necessary as GitHub does not allow the committing of empty folders by default and adding files to the folder makes it unusable for a volume. <br>
-Step 2: Go to line 3 of mysql.Dockerfile and change the root password to whatever you desire. <br>
-Step 3: Go to lines 34 and 36 of databaseinit.sql and line 21 of backend.js and change all instances of "YOUR-PASSWORD-HERE" to the password you want to use to authenticate the loginsdatabase MySQL database account. <br>
-Step 4: Run "docker-compose up" to start the project. Note that it may error the first time it is ever run on the project due to a minor bug in the mysqldb container health check. <br>
+Step 3: Go to line 3 of mysql.Dockerfile and change the root password to whatever you desire. <br>
+Step 4: Go to lines 34 and 36 of databaseinit.sql and line 21 of backend.js and change all instances of "YOUR-PASSWORD-HERE" to the password you want to use to authenticate the loginsdatabase MySQL database account. <br>
+Step 5: Run "docker-compose up" to start the project. Note that it may error the first time it is ever run on the project due to a minor bug in the mysqldb container health check. <br>
 
 # How to build for release
 If you want to build the project in a similar manner to the docker build released for this project, here are the necessary steps: <br>
